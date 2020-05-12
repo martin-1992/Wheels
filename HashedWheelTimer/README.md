@@ -1,6 +1,8 @@
 ## HashedWheelTimer
 　　简化版时间轮，参考了 Netty 的 HashedWheelTimer，原版是放到一个类。这里放到多个类，便于直观了解。<br />
-　　没有使用位运算来获取索引，而是用 %，去除参数校验。
+　　没有使用位运算来获取索引，而是用 %，去除参数校验，下图为时间轮构造。
+
+![avatar](photo_1.png)
 
 - **HashedWheelTimer，时间轮。** 为 HashedWheelBucket[]，即包含多个 HashedWheelBucket；
 	1. Worker，时间轮中的线程，核心逻辑，
@@ -28,13 +30,4 @@
 
 - 遍历每个时间格 HashedWheelBucket，将未执行的任务添加到集合 unprocessedTimeouts 中；
 - 将待执行的定时任务队列 timeouts 中未执行的任务添加到集合 unprocessedTimeouts 中。
-
-
-
-
-
-
-
-
-
 
