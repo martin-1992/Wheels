@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="common" />
+        <module name="consumer" />
+        <module name="handler" />
+        <module name="load-balance" />
+        <module name="provider" />
+        <module name="serialization" />
+        <module name="zookeeper" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="8">
+      <module name="conumser" target="8" />
+      <module name="swagger" target="8" />
+      <module name="testinterface" target="8" />
+      <module name="timer" target="8" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="RpcDemo" options="" />
+      <module name="common" options="-parameters" />
+      <module name="consumer" options="-parameters" />
+      <module name="conumser" options="-parameters" />
+      <module name="handler" options="-parameters" />
+      <module name="load-balance" options="-parameters" />
+      <module name="provider" options="-parameters" />
+      <module name="serialization" options="-parameters" />
+      <module name="swagger" options="-parameters" />
+      <module name="testinterface" options="-parameters" />
+      <module name="timer" options="-parameters" />
+      <module name="zookeeper" options="-parameters" />
+    </option>
+  </component>
+</project>

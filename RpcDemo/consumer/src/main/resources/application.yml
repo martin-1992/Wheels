@@ -1,0 +1,9 @@
+consumer:
+  ip: localhost
+  prefix: com.martin
+  loadBalanceStrategy: Polling
+  timeout: 3000
+
+server:
+  port: 9320
+

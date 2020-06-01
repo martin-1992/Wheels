@@ -1,0 +1,1 @@
+package com.martin.api;import com.martin.annotation.RpcInterface;@RpcInterfacepublic interface HelloService {    String sayHello(String somebody);}

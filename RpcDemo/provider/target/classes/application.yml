@@ -1,0 +1,9 @@
+producer:
+  interface: com.martin.api.HelloService
+  object: com.martin.Impl.HelloServiceImpl
+  ip: localhost
+  port: 8081
+  timeout: 2000
+
+server:
+  port: 9237
