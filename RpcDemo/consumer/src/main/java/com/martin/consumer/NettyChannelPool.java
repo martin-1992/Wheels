@@ -1,7 +1,6 @@
 package com.martin.consumer;
 
 import com.martin.NettyCodecHandler;
-import com.martin.NettyConsumerHandler;
 import com.martin.config.ZooKeeperProperty;
 import com.martin.entity.ProviderService;
 import com.martin.entity.Response;

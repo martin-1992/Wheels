@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * 请求类，照抄的，需要改
+ * 请求类
  **/
 public class Request implements Serializable {
 
