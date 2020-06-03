@@ -14,10 +14,9 @@
 
 ### 动态代理
 　　在 common 模块中包含服务提供方的接口，通过注解 @RpcInterface 自动为该接口生成一个代理类。<br />
-　　Spring AOP 提供统一拦截，在接口方法被调用时拦截，由创建的代理对象，调用反射方法，在反射方法中封装一套远程调用逻辑。
+　　Spring AOP 提供统一拦截，**在接口方法被调用时拦截，由创建的代理对象，调用反射方法，在反射方法中封装一套远程调用逻辑。**
 
 - 在 ConsumerBootStrap#afterPropertiesSet() 方法中，会扫描标注了 @RpcInterface 的类，为其创建代理对象，并注册到 Spring 容器中；
-
 ```java
     // ... 
     Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(RpcInterface.class);
@@ -28,7 +27,7 @@
         beanFactory.registerSingleton(clazz.getSimpleName(), consumerProxy.getProxy(clazz));
 ```
 
-- 消费者启动类 ClientApplication，是 从 Spring 上下文中获取是该接口的代理对象 bean，而不是该接口；
+- 消费者启动类 ClientApplication，是 从 Spring 上下文中获取该接口的代理对象 bean，而不是该接口；
 ```java
 HelloService helloService = (HelloService) context.getBean("HelloService");
 ```
@@ -45,7 +44,15 @@ HelloService helloService = (HelloService) context.getBean("HelloService");
     }
 ```
 
+### 服务发现
+　　使用 ZooKeeper 来实现服务发现机制，**本质是一个接口和服务提供者的 IP 地址列表的映射，通过子节点命名来实现。** <br />
+　　ZooKeeper 注册节点格式为 "根路径" + "接口全名" + "类型（生产者 / 消费者）" + "IP 地址|端口"，比如 root/com.martin.helloService/consumer/localhost|8081 。
 
+- **IRegisterCenterForConsumer 接口，负责服务订阅。** 从注册中心查找并订阅要调用接口的 IP 地址列表；
+- **IRegisterCenterForProvider 接口，负责服务注册。** 将要提供的接口注册到注册中心上，注册中心使用节点路径保存该接口和其 IP 地址。
 
+![avatar](photo_2.png)
 
+　　生产者和消费者注册的节点是为临时节点，通过命名来保存 IP 和端口的信息。服务订阅时，会从注册中心拉取一份要调用接口的 IP 地址列表到本地缓存中，服务调用方是直接发起远程调用到服务提供方，如上图。<br />
+　　在注册时还会注册监听器，当节点有变化时，ZooKeeper 会通知订阅该节点的服务调用方（消费者），会在该接口的本地缓存中，删除有变化的节点信息，即不调用该 IP。
 
