@@ -67,4 +67,88 @@ HelloService helloService = (HelloService) context.getBean("HelloService");
 ### 协议设计
 　　在 NettyCodecHandler 中简单设计一个定长协议，由协议头（固定 4 字节，存储内容长度） + 协议体（字节内容）组成。**通过读取内容长度来切割请求包，防止粘包和半包问题。** 协议体包含一个 Request 对象，该对象包含请求消息 ID 属性。<br />
 　　这里是简化设计，一个标准协议头，包括魔数、长度、消息 ID、协议版本、消息类型、序列化方式等。
-  
+
+### 异步设计
+　　重点在于发送请求时，**需要将请求 ID 存入本地缓存 Map 中。后面接收回复时，根据回复 ID 放入对应的结果。** 获取时，使用阻塞队列中带有超时的方法来获取结果，达到异步效果。
+
+![avatar](photo_3.png)
+
+#### NettyCodecHandler#write
+　　客户端发送请求时，会为该请求 ID 创建一个 ResponseWrapper 对象，放入一个 map 中。后续获取回复结果时，根据请求 ID 来获取 ResponseWrapper 对象，从 ResponseWrapper 中获取值。
+
+```java
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (msg instanceof Request) {
+            Request request = (Request) msg;
+            // 发送请求数据时，先将该 requestId 放入 map 中
+            ResponseHolder.initResponse(request.getRequestId());
+        }
+        // 传到下个 handler
+        super.write(ctx, msg, promise);
+    }
+    
+    private static final Map<String, ResponseWrapper> futureMap = new ConcurrentHashMap<>();
+
+    /**
+     * ResponseHolder#initResponse
+     **/
+    public static void initResponse(String requestId) {
+        // 初始化一个 ResponseWrapper 对象，放入 map 中
+        futureMap.put(requestId, new ResponseWrapper());
+    }
+```
+
+#### NettyCodecHandler#channelRead
+　　服务端解析请求后，计算结果并发送回复。NettyCodecHandler#channelRead 方法会接收到回复结果，将其放入 map 中。
+
+```java
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (msg instanceof Response) {
+            Response response = (Response) msg;
+            // 读取回复时，将结果存入 future 中
+            ResponseHolder.putResponse(response);
+        }
+        // 传到下个 handler
+        super.channelRead(ctx, msg);
+    }
+    
+    /**
+     * ResponseHolder#putResponse
+     **/
+    public static void putResponse(Response response) {
+        // 获取数据时，将结果存入 future 中
+        ResponseWrapper responseWrapper = futureMap.get(response.getResponseId());
+        responseWrapper.setResponseTime(System.currentTimeMillis());
+        // 将回复存入阻塞队列中
+        responseWrapper.getResponseBlockingQueue().add(response);
+        futureMap.put(response.getResponseId(), responseWrapper);
+    }
+```
+
+#### ResponseHolder#getResponseValue
+　　根据请求 ID 从 map 中获取 ResponseWrapper 对象，该对象包含一个容量为 1 的阻塞队列，用于存放回复结果。<br />
+　　使用阻塞队列带超时的 poll() 方法，来获取结果。
+
+```java
+    /**
+     * ConsumerCallable#call
+     **/
+    ResponseHolder.getResponseValue(request.getRequestId(), request.getInvokeTimeout())
+
+    public static Response getResponseValue(String requestId, long timeout) {
+        ResponseWrapper responseWrapper = futureMap.get(requestId);
+        try {
+            return responseWrapper.getResponseBlockingQueue().poll(timeout, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error("获取结果失败: " +  e);
+        } finally {
+            // 超时或未完成则移除
+            futureMap.remove(requestId);
+        }
+        return null;
+    }
+```
+
+
