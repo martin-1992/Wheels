@@ -22,8 +22,12 @@ public class ProviderService implements Serializable {
      **/
     private transient Object serviceImpl;
 
-    //    @JsonIgnore
     private transient Method serviceMethod;
+
+    /**
+     * 分组名
+     */
+    private String groupName;
 
     /**
      * 服务 IP
@@ -86,5 +90,26 @@ public class ProviderService implements Serializable {
 
     public void setServiceMethod(Method serviceMethod) {
         this.serviceMethod = serviceMethod;
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
+
+    @Override
+    public String toString() {
+        return "ProviderService{" +
+                "serviceInterface=" + serviceInterface +
+                ", serviceImpl=" + serviceImpl +
+                ", serviceMethod=" + serviceMethod +
+                ", groupName='" + groupName + '\'' +
+                ", serviceIP='" + serviceIP + '\'' +
+                ", servicePort=" + servicePort +
+                ", timeout=" + timeout +
+                '}';
     }
 }

@@ -4,6 +4,7 @@ producer:
   ip: localhost
   port: 8081
   timeout: 2000
+  group-name: rpcTest
 
 server:
   port: 9237
