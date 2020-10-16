@@ -46,7 +46,7 @@ HelloService helloService = (HelloService) context.getBean("HelloService");
 
 ### 服务发现
 　　使用 ZooKeeper 来实现服务发现机制，**本质是一个接口和服务提供者的 IP 地址列表的映射，通过子节点命名来实现。** <br />
-　　ZooKeeper 注册节点格式为 "根路径" + "接口全名" + "类型（生产者 / 消费者）" + "IP 地址|端口"，比如 root/com.martin.helloService/consumer/localhost|8081 。
+　　ZooKeeper 注册节点格式为 "根路径/接口全名/分组名/类型（生产者 / 消费者）/IP 地址|端口|分组名"，比如 root/rpcTest/com.martin.helloService/consumer/localhost|8081|rpcTest 。
 
 - **IRegisterCenterForConsumer 接口，负责服务订阅。** 从注册中心查找并订阅要调用接口的 IP 地址列表；
 - **IRegisterCenterForProvider 接口，负责服务注册。** 将要提供的接口注册到注册中心上，注册中心使用节点路径保存该接口和其 IP 地址。
@@ -55,6 +55,10 @@ HelloService helloService = (HelloService) context.getBean("HelloService");
 
 　　生产者和消费者注册的节点是为临时节点，通过命名来保存 IP 和端口的信息。服务订阅时，会从注册中心拉取一份要调用接口的 IP 地址列表到本地缓存中，服务调用方是直接发起远程调用到服务提供方，如上图。<br />
 　　在注册时还会注册监听器，当节点有变化时，ZooKeeper 会通知订阅该节点的服务调用方（消费者），会在该接口的本地缓存中，删除有变化的节点信息，即不调用该 IP。
+
+### 分组隔离流量
+　　不同分组，有不同的服务提供方，比如 "root/rpcTest/com.martin.helloService/consumer/localhost|8081|rpcTest"，helloService 接口的分组为 rpcTest。**分组是为了隔离服务调用方的流量，防止一个调用方的流量大增影响到其他调用方，同时也是为了保护核心业务不受非核心的影响的。** <br />
+　　以购物网站为例，所有服务提供方都在同一个分组中，现有购买服务接口、评价服务接口。因活动促销，购买服务接口的调用大幅增加，导致其他服务，如评价服务的接口调用减少甚至不可用。
 
 ### 负载均衡
 　　在服务发现模块讲到，服务消费者会从注册中心（ZooKeeper）上根据接口名拉取一份该接口与 IP 地址列表的映射到本地缓存，**而负载均衡是在本地缓存列表中实现的。** <br />
@@ -159,4 +163,8 @@ HelloService helloService = (HelloService) context.getBean("HelloService");
     }
 ```
 
+#### 时间轮
+　　该项目是使用单一线程来扫描超时任务，会重复扫描，换成时间轮解决。<br />
 
+- 服务调用方在发送请求时，会将该请求包装成定时任务放入时间轮中；
+- 时间轮会遍历每个时间格，删除过期任务。
